@@ -5,6 +5,7 @@ import path from 'path'
 import Jimp from "jimp";
 import QRCode from 'qrcode'
 import { PersonCredential1 } from './mocks';
+import querystring from 'querystring';
 
 
 export const toLocalISOString = (date:Date) =>{
@@ -633,13 +634,18 @@ export class Context {
         })
         */
         //const attachments = proof.presentation_request_dict['request_presentations~attach']
+        const proofReqString = JSON.stringify(proof.presentation_request)
+        console.log(`proofReqString:${proofReqString}`)
+        const proofReqEncoded = Buffer.from(proofReqString).toString('base64')
+        console.log(`Decoded proofReqString:${Buffer.from(proofReqEncoded, 'base64').toString('utf-8')}`)
         const attachments = [{
             "@id": "libindy-request-presentation-0",
             "mime-type": "application/json",
             "data": {
-              "base64": Buffer.from(JSON.stringify(proof.presentation_request)).toString('base64')
+              "base64": proofReqEncoded
             }
           }]
+        
         console.log('attachments')
         console.dir(attachments, {depth: 5, maxStringLength: 50})
         return Promise.resolve({
@@ -654,31 +660,15 @@ export class Context {
               }
         }).then(value => {
             console.log('invitation:')
-            console.dir(value, {depth: 5, maxStringLength: 80})
-            this.config.current_invitation_url='https://traction-acapy-dev.apps.silver.devops.gov.bc.ca?c_i='+Buffer.from(JSON.stringify(value)).toString('base64')
+            console.log(JSON.stringify(value, undefined, 2))
+            //console.dir(value, {depth: 5, maxStringLength: 80})
+            this.config.current_invitation_url='https://traction-acapy-dev.apps.silver.devops.gov.bc.ca?c_i='+querystring.escape(Buffer.from(JSON.stringify(value)).toString('base64'))
             return value
         })
         
     }
-    public async sendOOBProofRequest() {
-        const proofRequest = {
-            "name": "proof-request",
-            "version": "1.0",
-            "requested_attributes": {
-               "person_attrs": {
-                  "names": [
-                    "given_names",
-                    "family_name"
-                     ],
-                     "restrictions": [
-                        {
-                            "schema_name": "Person"
-                        }
-                    ]
-               }
-            },
-            "requested_predicates": {}
-         }
+    public async sendOOBProofRequest(builder: ProofRequestBuilder) {
+        const proofRequest = builder.build()
         return axios.post(`${this.config.base_url}/present-proof/create-request`,{
             "auto_remove": true,
             "auto_verify": false,
