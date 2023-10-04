@@ -634,6 +634,9 @@ export class Context {
         })
         */
         //const attachments = proof.presentation_request_dict['request_presentations~attach']
+        console.log('presentation_request_dict')
+        console.dir(proof.presentation_request_dict, {depth: 5, maxStringLength: 50})
+        const invitation = JSON.parse(JSON.stringify(proof.presentation_request_dict))
         const proofReqString = JSON.stringify(proof.presentation_request)
         console.log(`proofReqString:${proofReqString}`)
         const proofReqEncoded = Buffer.from(proofReqString).toString('base64')
@@ -648,21 +651,21 @@ export class Context {
         
         console.log('attachments')
         console.dir(attachments, {depth: 5, maxStringLength: 50})
-        return Promise.resolve({
-            "@id": proof.thread_id,
-            "@type": 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation',
-            "request_presentations~attach": attachments,
-            "comment": null,
-            "~service": {
-                "recipientKeys": [wallet.result.verkey],
-                "routingKeys": null,
-                "serviceEndpoint": "https://traction-acapy-dev.apps.silver.devops.gov.bc.ca"
-              }
-        }).then(value => {
+        invitation['comment']= null
+        invitation['~service']= {
+            "recipientKeys": [wallet.result.verkey],
+            "routingKeys": null,
+            "serviceEndpoint": "https://traction-tenant-proxy-dev.apps.silver.devops.gov.bc.ca"
+          }
+        return Promise.resolve(invitation).then(value => {
             console.log('invitation:')
             console.log(JSON.stringify(value, undefined, 2))
-            //console.dir(value, {depth: 5, maxStringLength: 80})
-            this.config.current_invitation_url='https://traction-acapy-dev.apps.silver.devops.gov.bc.ca?c_i='+querystring.escape(Buffer.from(JSON.stringify(value)).toString('base64'))
+            const baseUrl = 'https://traction-tenant-proxy-dev.apps.silver.devops.gov.bc.ca'
+            const url = new URL(baseUrl)
+            url.searchParams.append('c_i', Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
+            this.config.current_invitation_url=url.toString()
+            //this.config.current_invitation_url=baseUrl+'?c_i='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
+            //console.log(``)
             return value
         })
         

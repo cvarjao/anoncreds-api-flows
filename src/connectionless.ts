@@ -12,7 +12,7 @@ import { PersonCredential1, PersonSchema1 } from './mocks';
         await ctx.createSchema(schema)
         await ctx.createCredentialDefinition(credDef)
         await ctx.sendConnectionlessProofRequest(new ProofRequestBuilder()
-            .addRequestedAttribute("studentIndo",
+            .addRequestedAttribute("0_student_info",
                 new RequestAttributeBuilder()
                     .setNames(["given_names", "family_name"])
                     .addRestriction({"schema_name": schema.getName()})
